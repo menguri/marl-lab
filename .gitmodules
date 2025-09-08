@@ -1,0 +1,3 @@
+[submodule "external/epymarl"]
+	path = external/epymarl
+	url = https://github.com/uoe-agents/epymarl.git
