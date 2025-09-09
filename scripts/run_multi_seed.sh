@@ -9,6 +9,7 @@
 예시:
   ./scripts/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games env_args.time_limit=25
   ./scripts/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 3 foraging common_reward=False
+  ./scripts/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=3m
 """
 
 # 인자 검증
@@ -18,6 +19,7 @@ if [ $# -lt 3 ]; then
     echo "예시:"
     echo "  $0 qmix \"matrixgames:penalty-100-nostate-v0\" 5 matrix_games env_args.time_limit=25"
     echo "  $0 mappo \"lbforaging:Foraging-8x8-2p-3f-v3\" 3 foraging common_reward=False"
+    echo "  $0 vdn sc2 5 smac1 env_args.map_name=3m"
     exit 1
 fi
 
@@ -61,20 +63,33 @@ for ((i=1; i<=NUM_SEEDS; i++)); do
     elif [[ "$ENV_KEY" == *"pz-mpe"* ]]; then
         ENV_CONFIG="gymma"
         DEFAULT_ARGS="env_args.time_limit=25"
+    elif [[ "$ENV_KEY" == "sc2" ]]; then
+        ENV_CONFIG="sc2"
+        DEFAULT_ARGS="env_args.map_name=3m"
     else
         ENV_CONFIG="gymma"
         DEFAULT_ARGS=""
     fi
     
     # W&B 실행 스크립트 사용
-    python "$SCRIPT_DIR/run_with_wandb.py" \
-        --config="$ALGORITHM" \
-        --env-config="$ENV_CONFIG" \
-        --wandb-config="$WANDB_CONFIG" \
-        env_args.key="$ENV_KEY" \
-        seed=$SEED \
-        $DEFAULT_ARGS \
-        $ADDITIONAL_ARGS
+    if [[ "$ENV_KEY" == "sc2" ]]; then
+        python "$SCRIPT_DIR/run_with_wandb.py" \
+            --config="$ALGORITHM" \
+            --env-config="$ENV_CONFIG" \
+            --wandb-config="$WANDB_CONFIG" \
+            seed=$SEED \
+            $DEFAULT_ARGS \
+            $ADDITIONAL_ARGS
+    else
+        python "$SCRIPT_DIR/run_with_wandb.py" \
+            --config="$ALGORITHM" \
+            --env-config="$ENV_CONFIG" \
+            --wandb-config="$WANDB_CONFIG" \
+            env_args.key="$ENV_KEY" \
+            seed=$SEED \
+            $DEFAULT_ARGS \
+            $ADDITIONAL_ARGS
+    fi
     
     # 실험 간 간격
     sleep 2

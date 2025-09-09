@@ -163,12 +163,27 @@ mkdir -p configs
 ### 🔬 고급 실험 기능
 
 #### 시드 다양화 실험
+
+**📋 VDN + SMAC 3m 환경 실험 (추천)**
+```bash
+# VDN 알고리즘으로 SMAC 3m 환경에서 5개 시드 실험 (W&B 로깅 포함)
+./scripts/run_multi_seed.sh vdn sc2 5 smac1
+
+# 다른 SMAC 맵 사용시 (8m, 2s3z 등)
+./scripts/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=8m
+./scripts/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=2s3z
+```
+
+**🔧 다른 환경 실험**
 ```bash
 # 통합 스크립트 사용 (권장)
 python scripts/unified_experiment.py --algorithm qmix --environment matrix_penalty --seeds 5
 
-# 기존 방식
+# Matrix Games
 ./scripts/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
+
+# Level-based Foraging
+./scripts/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 5 foraging common_reward=False
 ```
 
 #### 알고리즘 성능 비교
