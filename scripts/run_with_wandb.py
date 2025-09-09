@@ -40,14 +40,17 @@ def build_epymarl_command(args, wandb_config):
     if args.epymarl_args:
         cmd_parts.extend(args.epymarl_args)
     
-    # W&B 설정 주입
+    # W&B 설정 주입 (EPyMARL에서 지원하는 설정만)
+    supported_wandb_keys = ['wandb_team', 'wandb_project', 'wandb_mode', 'wandb_save_model']
     for key, value in wandb_config.items():
-        if key.startswith('wandb_') or key in ['use_wandb', 'use_tensorboard', 'save_model', 'save_model_interval', 'common_reward', 'reward_scalarisation', 'log_interval', 'test_interval', 'buffer_cpu_only', 'use_cuda', 'batch_size_run']:
+        if key.startswith('wandb_') and key in supported_wandb_keys:
             if isinstance(value, bool):
                 cmd_parts.append(f"{key}={str(value).lower()}")
-            elif isinstance(value, list):
-                # 리스트는 문자열로 변환 (wandb_tags 등)
-                cmd_parts.append(f'{key}="{",".join(map(str, value))}"')
+            elif value is not None:
+                cmd_parts.append(f'{key}="{value}"')
+        elif key in ['use_wandb', 'use_tensorboard', 'save_model', 'save_model_interval', 'common_reward', 'reward_scalarisation', 'log_interval', 'test_interval', 'buffer_cpu_only', 'use_cuda', 'batch_size_run', 't_max', 'test_nepisode']:
+            if isinstance(value, bool):
+                cmd_parts.append(f"{key}={str(value).lower()}")
             elif value is not None:
                 cmd_parts.append(f'{key}="{value}"')
     
