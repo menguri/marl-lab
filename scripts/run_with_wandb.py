@@ -42,7 +42,7 @@ def build_epymarl_command(args, wandb_config):
     
     # W&B 설정 주입
     for key, value in wandb_config.items():
-        if key.startswith('wandb_') or key in ['use_wandb', 'use_tensorboard', 'save_model', 'save_model_interval', 'common_reward', 'reward_scalarisation']:
+        if key.startswith('wandb_') or key in ['use_wandb', 'use_tensorboard', 'save_model', 'save_model_interval', 'common_reward', 'reward_scalarisation', 'log_interval', 'test_interval', 'buffer_cpu_only', 'use_cuda', 'batch_size_run']:
             if isinstance(value, bool):
                 cmd_parts.append(f"{key}={str(value).lower()}")
             elif isinstance(value, list):
@@ -50,6 +50,13 @@ def build_epymarl_command(args, wandb_config):
                 cmd_parts.append(f'{key}="{",".join(map(str, value))}"')
             elif value is not None:
                 cmd_parts.append(f'{key}="{value}"')
+    
+    # 환경 변수에서 W&B 설정 가져오기
+    if os.getenv('WANDB_ENTITY') and 'wandb_team' not in [k for k, v in wandb_config.items() if v is not None]:
+        cmd_parts.append(f'wandb_team="{os.getenv("WANDB_ENTITY")}"')
+    
+    if os.getenv('WANDB_PROJECT') and 'wandb_project' not in [k for k, v in wandb_config.items() if v is not None]:
+        cmd_parts.append(f'wandb_project="{os.getenv("WANDB_PROJECT")}"')
     
     return cmd_parts
 

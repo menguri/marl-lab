@@ -14,13 +14,11 @@
 if [ $# -lt 2 ]; then
     echo "사용법: $0 <algorithm> <environment> [additional_args...]"
     echo ""
-    echo "지원하는 환경:"
-    echo "  matrix_penalty   - Matrix Penalty Game"
-    echo "  matrix_climbing  - Matrix Climbing Game"
-    echo "  lbf_small       - Small LBF (8x8-2p-3f)"
-    echo "  lbf_medium      - Medium LBF (10x10-3p-3f)"
-    echo "  rware_tiny      - Tiny RWARE (2 agents)"
-    echo "  mpe_spread      - MPE Simple Spread"
+    echo "지원하는 환경 (통합 스크립트 사용 권장):"
+    echo "  python scripts/unified_experiment.py --action list --category quick"
+    echo ""
+    echo "또는 통합 실험 스크립트 사용:"
+    echo "  python scripts/unified_experiment.py --algorithm qmix --environment matrix_penalty --quick"
     exit 1
 fi
 
@@ -69,6 +67,24 @@ case $ENVIRONMENT in
         WANDB_CONFIG="default"
         DEFAULT_ARGS="env_args.time_limit=15 t_max=15000"
         ;;
+    "smac2_terran")
+        ENV_KEY="terran_5_vs_5"
+        WANDB_CONFIG="smac2"
+        DEFAULT_ARGS="t_max=100000"
+        ENV_CONFIG="sc2v2"
+        ;;
+    "smac2_protoss")
+        ENV_KEY="protoss_5_vs_5"
+        WANDB_CONFIG="smac2"
+        DEFAULT_ARGS="t_max=100000"
+        ENV_CONFIG="sc2v2"
+        ;;
+    "smac2_zerg")
+        ENV_KEY="zerg_5_vs_5"
+        WANDB_CONFIG="smac2"
+        DEFAULT_ARGS="t_max=100000"
+        ENV_CONFIG="sc2v2"
+        ;;
     *)
         echo "지원하지 않는 환경: $ENVIRONMENT"
         exit 1
@@ -78,7 +94,7 @@ esac
 # 실험 실행
 python "$SCRIPT_DIR/run_with_wandb.py" \
     --config="$ALGORITHM" \
-    --env-config="gymma" \
+    --env-config="$ENV_CONFIG" \
     --wandb-config="$WANDB_CONFIG" \
     env_args.key="$ENV_KEY" \
     $DEFAULT_ARGS \

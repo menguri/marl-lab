@@ -60,14 +60,30 @@ external/epymarl/src/
 - **PAC**: Pareto Actor-Critic
 - **MADDPG**: Multi-Agent Deep Deterministic Policy Gradient
 
-### 지원하는 환경
-- **SMAC/SMACv2**: StarCraft Multi-Agent Challenge
-- **SMAClite**: 경량화된 SMAC 버전
-- **Matrix Games**: 행렬 게임 환경
-- **LBF**: Level-Based Foraging
-- **RWARE**: Multi-Robot Warehouse
-- **MPE**: Multi-agent Particle Environment (PettingZoo)
-- **VMAS**: Vectorized Multi-Agent Simulator
+### 지원하는 환경 (총 30+개)
+
+#### 🎮 Matrix Games (4개)
+- **Matrix Penalty Games**: 다양한 페널티 수준 (-25, -50, -100)
+- **Matrix Climbing Game**: 협력 게임
+
+#### 🍎 Level-Based Foraging (4개)
+- **LBF Small/Medium/Large**: 다양한 크기의 foraging 환경
+- **Cooperative LBF**: 협력 필수 버전
+
+#### 📦 Multi-Robot Warehouse (3개)
+- **RWARE Tiny/Small**: 2-4 에이전트 창고 환경
+
+#### 🎯 Multi-Agent Particle Environment (4개)
+- **MPE Spread/Speaker-Listener/Adversary/Tag**: 다양한 협력/경쟁 환경
+
+#### ⚔️ SMAC (StarCraft Multi-Agent Challenge) (5개)
+- **Classic SMAC Maps**: 3s5z, 2s_vs_1sc, corridor, MMM2, 3s_vs_5z
+
+#### 🚀 SMACv2 (4개)
+- **Race-based Battles**: Terran/Protoss/Zerg 5v5 및 10v10
+
+#### 🤖 VMAS (2개)
+- **Vectorized Multi-Agent**: Balance, Transport 환경
 
 ## 🚀 빠른 시작
 
@@ -93,12 +109,35 @@ pip install -r external/epymarl/pac_requirements.txt
 ```
 
 ### 3. 기본 실험 실행
+
+#### 🚀 새로운 통합 스크립트 (권장)
 ```bash
-# QMIX로 Matrix Game 실험
+# 환경 목록 확인
+python scripts/unified_experiment.py --action list
+
+# 알고리즘별 추천 환경 확인
+python scripts/unified_experiment.py --action list --for-algorithm qmix
+
+# 기본 실험 실행
+python scripts/unified_experiment.py --algorithm qmix --environment matrix_penalty
+
+# 개별 보상 환경에서 실험
+python scripts/unified_experiment.py --algorithm mappo --environment lbf_small --individual-rewards
+
+# 빠른 테스트 (짧은 학습)
+python scripts/unified_experiment.py --algorithm qmix --environment smac_3s5z --quick
+
+# 다중 시드 실험
+python scripts/unified_experiment.py --algorithm mappo --environment lbf_medium --seeds 5
+```
+
+#### 🔧 기존 방식 (호환성)
+```bash
+# 직접 EPyMARL 실행
 python external/epymarl/src/main.py --config=qmix --env-config=gymma with env_args.time_limit=25 env_args.key="matrixgames:penalty-100-nostate-v0"
 
-# MAPPO로 LBF 개별 보상 실험
-python external/epymarl/src/main.py --config=mappo --env-config=gymma with env_args.time_limit=50 env_args.key="lbforaging:Foraging-8x8-2p-3f-v3" common_reward=False
+# W&B 설정 스크립트 사용
+python scripts/run_with_wandb.py --config=mappo --env-config=gymma --wandb-config=foraging env_args.key="lbforaging:Foraging-8x8-2p-3f-v3" common_reward=False
 ```
 
 ## 📊 Weights & Biases (W&B) 통합
@@ -121,21 +160,45 @@ mkdir -p configs
 
 ## 🛠 알고리즘 개발 및 실험
 
-### 시드 다양화 실험
-여러 시드로 실험을 실행하여 통계적 신뢰성을 확보할 수 있습니다:
+### 🔬 고급 실험 기능
 
+#### 시드 다양화 실험
 ```bash
-# scripts/ 디렉토리의 스크립트 사용 (아래에서 생성 예정)
-./scripts/run_multi_seed.sh qmix matrixgames:penalty-100-nostate-v0 5
+# 통합 스크립트 사용 (권장)
+python scripts/unified_experiment.py --algorithm qmix --environment matrix_penalty --seeds 5
+
+# 기존 방식
+./scripts/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
 ```
 
-### 하이퍼파라미터 탐색
+#### 알고리즘 성능 비교
+```bash
+# 통합 스크립트로 여러 알고리즘 비교 실험 계획
+python scripts/unified_experiment.py --action list --for-algorithm qmix  # 추천 환경 확인
+python scripts/unified_experiment.py --algorithm qmix --environment matrix_penalty --seeds 3
+python scripts/unified_experiment.py --algorithm vdn --environment matrix_penalty --seeds 3
+
+# 기존 비교 스크립트
+python scripts/algorithm_comparison.py --env matrix_penalty --algorithms qmix vdn qtran --seeds 3
+```
+
+#### 호환성 검증
+```bash
+# 알고리즘-환경 호환성 자동 검증
+python scripts/unified_experiment.py --algorithm qmix --environment lbf_small --individual-rewards
+# ❌ 호환성 오류: 알고리즘 qmix는 개별 보상 모드를 지원하지 않습니다
+
+python scripts/unified_experiment.py --algorithm mappo --environment lbf_small --individual-rewards
+# ✅ 호환성 검증 통과
+```
+
+#### 하이퍼파라미터 탐색
 ```bash
 # EPyMARL의 search.py 사용
 python external/epymarl/search.py run --config=search.config.example.yaml --seeds 5 locally
 ```
 
-### 결과 시각화
+#### 결과 시각화
 ```bash
 # EPyMARL의 plotting 스크립트 사용
 python external/epymarl/plot_results.py --results_dir results/ --env_name "penalty"

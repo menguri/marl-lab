@@ -14,8 +14,17 @@ import sys
 from pathlib import Path
 import time
 
-# 환경 설정
-ENVIRONMENTS = {
+# 기존 환경 설정을 통합 설정으로 대체
+# 새로운 통합 스크립트 사용 권장: scripts/unified_experiment.py
+
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+from configs.environments import ENVIRONMENTS, get_environment_config
+
+# 호환성을 위한 전환 사전
+COMPATIBILITY_ENVIRONMENTS = {
     'matrix_penalty': {
         'key': 'matrixgames:penalty-100-nostate-v0',
         'config': 'gymma',
@@ -45,10 +54,52 @@ ENVIRONMENTS = {
         'config': 'gymma',
         'wandb_config': 'default',
         'default_args': 'env_args.time_limit=500 t_max=1000000'
+    },
+    'smac2_terran': {
+        'key': 'terran_5_vs_5',
+        'config': 'sc2v2',
+        'wandb_config': 'smac2',
+        'default_args': 't_max=2000000'
+    },
+    'smac2_protoss': {
+        'key': 'protoss_5_vs_5',
+        'config': 'sc2v2',
+        'wandb_config': 'smac2',
+        'default_args': 't_max=2000000'
+    },
+    'smac2_zerg': {
+        'key': 'zerg_5_vs_5',
+        'config': 'sc2v2',
+        'wandb_config': 'smac2',
+        'default_args': 't_max=2000000'
+    },
+    # SMAC1 환경 추가
+    'smac_3s5z': {
+        'key': '3s5z',
+        'config': 'sc2',
+        'wandb_config': 'smac1',
+        'default_args': 'env_args.map_name="3s5z" t_max=2000000'
+    },
+    'smac_2s_vs_1sc': {
+        'key': '2s_vs_1sc',
+        'config': 'sc2',
+        'wandb_config': 'smac1',
+        'default_args': 'env_args.map_name="2s_vs_1sc" t_max=2000000'
+    },
+    'smac_MMM2': {
+        'key': 'MMM2',
+        'config': 'sc2',
+        'wandb_config': 'smac1',
+        'default_args': 'env_args.map_name="MMM2" t_max=2000000'
     }
 }
 
 def run_experiment(algorithm, env_config, seed, individual_rewards=False, additional_args=""):
+    \"\"\"
+    주의: 이 스크립트는 호환성을 위해 유지되지만, 
+    새로운 통합 실험 스크립트 사용을 권장합니다:
+    python scripts/unified_experiment.py --algorithm <alg> --environment <env> --seeds <n>
+    \"\"\"
     """단일 실험을 실행합니다."""
     script_dir = Path(__file__).parent
     run_script = script_dir / "run_with_wandb.py"
