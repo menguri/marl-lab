@@ -47,10 +47,15 @@ WANDB_CONFIG=${4:-"default"}
 shift 4
 RAW_ADDITIONAL_ARGS=("$@")
 ADDITIONAL_ARGS=()
+EXP_CONFIG=""
 
 for arg in "${RAW_ADDITIONAL_ARGS[@]}"; do
     if [[ "$arg" == RUN_MULTI_SEED_WORKERS=* ]]; then
         echo "경고: RUN_MULTI_SEED_WORKERS는 인자가 아니라 환경 변수로 설정하세요 (예: RUN_MULTI_SEED_WORKERS=4 $0 ...)."
+        continue
+    fi
+    if [[ "$arg" == exp_config=* ]]; then
+        EXP_CONFIG="${arg#exp_config=}"
         continue
     fi
     if [ -n "$arg" ]; then
@@ -74,6 +79,9 @@ echo "환경: $ENV_KEY"
 echo "시드 개수: $NUM_SEEDS"
 echo "W&B 설정: $WANDB_CONFIG"
 echo "추가 인자: ${ADDITIONAL_ARGS[*]}"
+if [ -n "$EXP_CONFIG" ]; then
+    echo "실험 설정: $EXP_CONFIG"
+fi
 echo "동시 실행 워커 수: $MAX_WORKERS"
 echo "========================================="
 echo ""
@@ -116,11 +124,17 @@ for ((i=1; i<=NUM_SEEDS; i++)); do
     fi
     
     # W&B 실행 스크립트 사용
+    EXP_FLAGS=()
+    if [ -n "$EXP_CONFIG" ]; then
+        EXP_FLAGS+=("--exp-config" "$EXP_CONFIG")
+    fi
+
     if [[ "$ENV_KEY" == "sc2" ]]; then
         python "$PROJECT_ROOT/scripts/run_with_wandb.py" \
             --config="$ALGORITHM" \
             --env-config="$ENV_CONFIG" \
             --wandb-config="$WANDB_CONFIG" \
+            "${EXP_FLAGS[@]}" \
             seed=$SEED \
             "${DEFAULT_ARGS[@]}" \
             "${ADDITIONAL_ARGS[@]}" &
@@ -129,6 +143,7 @@ for ((i=1; i<=NUM_SEEDS; i++)); do
             --config="$ALGORITHM" \
             --env-config="$ENV_CONFIG" \
             --wandb-config="$WANDB_CONFIG" \
+            "${EXP_FLAGS[@]}" \
             env_args.key="$ENV_KEY" \
             seed=$SEED \
             "${DEFAULT_ARGS[@]}" \

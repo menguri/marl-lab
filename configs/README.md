@@ -11,6 +11,7 @@ marl-lab/
 │   │   └── environments.py
 │   ├── server/
 │   │   └── setup.sh         # 서버 공용 환경 변수 세팅
+│   ├── exp/                 # 실험 템플릿 (algo/env/with 인자)
 │   └── wandb/               # W&B 프리셋 모음 (YAML)
 │       ├── default.yaml
 │       ├── server_default.yaml
@@ -63,6 +64,9 @@ echo "source ~/marl-lab/configs/server/setup.sh" >> ~/.bashrc
 
 # 다중 시드 실험 (동시 워커 4개)
 RUN_MULTI_SEED_WORKERS=4 ./bin/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 5 foraging common_reward=False
+
+# YAML 템플릿을 활용한 SMAC 3s5z 실험
+./bin/run_multi_seed.sh qmix sc2 3 smac1 exp_config=smac_qmix_rnn
 
 # Python 기반 통합 실험 러너
 python scripts/unified_experiment.py --algorithm qmix --environment matrix_penalty --seeds 3

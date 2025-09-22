@@ -153,6 +153,31 @@ python scripts/run_with_wandb.py --config=mappo --env-config=gymma --wandb-confi
 
 > 참고: 커스텀 코드를 작성하기 전에는 `plugins/` 디렉토리가 비어 있어도 괜찮습니다. 새 패키지를 만들 때는 `__init__.py`를 꼭 생성해 Python이 패키지로 인식하도록 해 주세요.
 
+### YAML 기반 실험 템플릿
+
+`configs/exp/` 디렉토리에 실험용 YAML을 만들어 두면, 스크립트를 실행할 때 `exp_config=<이름>`으로 호출하여 하이퍼파라미터를 일괄 적용할 수 있습니다.
+
+```yaml
+# configs/exp/smac_qmix_rnn.yaml 예시
+algo: qmix
+env_config: sc2
+wandb_config: smac1
+with:
+  env_args.map_name: "3s5z"
+  use_rnn: true
+  obs_last_action: true
+```
+
+```bash
+# 단일 실행
+python scripts/run_with_wandb.py --exp-config=smac_qmix_rnn
+
+# 멀티 시드 실행
+RUN_MULTI_SEED_WORKERS=4 ./bin/run_multi_seed.sh qmix sc2 5 smac1 exp_config=smac_qmix_rnn
+```
+
+YAML 파일의 `with` 블록은 EPyMARL의 `with` 인자로 변환되며, CLI에서 넘긴 인자가 있으면 YAML 값을 덮어씁니다. 덕분에 `use_rnn`/`obs_last_action`처럼 토글이 필요한 옵션을 쉽게 전환할 수 있습니다.
+
 ## 📊 Weights & Biases (W&B) 통합
 
 ### W&B 설정 (서브모듈 수정 없이)

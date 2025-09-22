@@ -1,0 +1,9 @@
+# IQL + SMAC 3s5z 실험 (RNN + last action 활성화)
+algo: iql
+env_config: sc2
+wandb_config: smac1
+with:
+  env_args.map_name: "3s5z"
+  use_rnn: true
+  obs_last_action: true
+  common_reward: false

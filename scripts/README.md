@@ -55,6 +55,9 @@ python scripts/unified_experiment.py --algorithm mappo --environment lbf_medium 
 ### `run_with_wandb.py` - W&B 설정 통합 스크립트
 ```bash
 python scripts/run_with_wandb.py --config=qmix --env-config=gymma --wandb-config=matrix_games env_args.key="matrixgames:penalty-100-nostate-v0"
+
+# 실험 템플릿을 함께 사용 (configs/exp/smac_qmix_rnn.yaml)
+python scripts/run_with_wandb.py --exp-config=smac_qmix_rnn
 ```
 
 ### `run_multi_seed.sh` (`bin/`) - 다중 시드 실험
@@ -64,6 +67,9 @@ python scripts/run_with_wandb.py --config=qmix --env-config=gymma --wandb-config
 
 # 동시에 여러 시드를 돌리려면 환경 변수를 지정하세요.
 RUN_MULTI_SEED_WORKERS=4 ./bin/run_multi_seed.sh ...
+
+# YAML 템플릿 적용 (예: use_rnn 켜기)
+./bin/run_multi_seed.sh qmix sc2 5 smac1 exp_config=smac_qmix_rnn
 ```
 
 ### `quick_experiment.sh` (`bin/`) - 빠른 실험

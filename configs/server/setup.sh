@@ -42,7 +42,7 @@ export WANDB_PROJECT="marl-lab"  # 기본 프로젝트명
 # ------------------------------------------------
 
 # CUDA 설정 (필요시)
-export CUDA_VISIBLE_DEVICES="1"  # 원하는 GPU 번호로 변경
+export CUDA_VISIBLE_DEVICES="0"  # 원하는 GPU 번호로 변경
 
 # StarCraft II 설정 (SMAC/SMAC2 사용시)
 export SC2PATH="${HOME}/StarCraftII"
