@@ -1,6 +1,6 @@
 # MARL Lab - Multi-Agent Reinforcement Learning Laboratory
 
-이 프로젝트는 EPyMARL을 서브모듈로 사용하여 멀티에이전트 강화학습 알고리즘을 개발하고 실험하기 위한 연구 환경입니다.
+이 프로젝트는 EPyMARL을 서브모듈로 사용하여 멀티에이전트 강화학습 알고리즘을 개발하고 실험하기 위한 연구 환경이다.
 
 ## 📁 프로젝트 구조
 
@@ -142,20 +142,20 @@ python scripts/run_with_wandb.py --config=mappo --env-config=gymma --wandb-confi
 
 ## 🧩 커스텀 확장 설계 가이드
 
-향후 자체 알고리즘이나 환경 래퍼를 추가할 때는 다음 순서를 따르면 됩니다. 서브모듈(`external/epymarl`)은 수정하지 않고, 우리 저장소에서만 변경이 일어나도록 유지하세요.
+향후 자체 알고리즘이나 환경 래퍼를 추가할 때는 아래 절차를 따른다. 서브모듈(`external/epymarl`)은 수정하지 않고, 상위 저장소에서만 변경이 일어나도록 유지한다.
 
-- **코드 배치**: `plugins/` 하위에 새 패키지를 만들고 코드를 둡니다. 예) learner → `plugins/algos/<알고리즘>/learner.py`, 환경 래퍼 → `plugins/custom_envs/<환경>/wrapper.py`.
-- **레지스트리 등록**: `plugins/registry.py`의 `register_plugins()` 함수 안에서 방금 만든 모듈을 import 한 뒤 `LEARNERS[...]`, `MACS[...]`, `ENVS[...]`에 키를 추가합니다. 이 단계가 있어야 EPyMARL이 커스텀 클래스를 인식합니다.
-- **환경 메타데이터 갱신**: 새 환경 키를 노출하고 싶다면 `configs/python/environments.py`에 `EnvironmentConfig` 항목을 추가해 설명, 기본 인자, 권장 알고리즘을 정의합니다. `scripts/unified_experiment.py`와 CLI 도구들이 이 테이블을 참조합니다.
-- **W&B 프리셋 추가**: 로깅 설정이 기존과 다르면 `configs/wandb/`에 새로운 YAML을 만들고, 실행 시 `--wandb-config=<이름>` 옵션으로 선택합니다.
-- **실행 스크립트 연동**: `bin/run_multi_seed.sh`, `bin/server_run.sh`, `bin/quick_experiment.sh`는 모두 `scripts/run_with_wandb.py`를 통해 실행됩니다. 커스텀 알고리즘을 기본 옵션에 노출하려면 이 스크립트들에 분기를 추가하거나 README 예시 커맨드를 갱신하세요.
-- **스모크 테스트**: `scripts/run_once.py`는 레지스트리가 정상 동작하는지 빠르게 확인하기 위한 최소 실행 스크립트입니다. 새 알고리즘 이름과 간단한 `with` 인자를 넣어 1회 학습이 되는지 확인하세요.
+- **코드 배치**: `plugins/` 하위에 새 패키지를 만들고 모듈을 배치한다. 예) learner → `plugins/algos/<알고리즘>/learner.py`, 환경 래퍼 → `plugins/custom_envs/<환경>/wrapper.py`.
+- **레지스트리 등록**: `plugins/registry.py`의 `register_plugins()` 함수 안에서 모듈을 import 해 `LEARNERS[...]`, `MACS[...]`, `ENVS[...]`에 키를 추가한다. 이 단계가 있어야 EPyMARL이 커스텀 클래스를 인식한다.
+- **환경 메타데이터 갱신**: 새 환경 키를 노출하려면 `configs/python/environments.py`에 `EnvironmentConfig` 항목을 추가해 설명, 기본 인자, 권장 알고리즘을 정의한다. `scripts/unified_experiment.py`와 CLI 도구들은 이 테이블을 참조한다.
+- **W&B 프리셋 추가**: 로깅 설정이 기존과 다르면 `configs/wandb/`에 새로운 YAML을 만들고, 실행 시 `--wandb-config=<이름>` 옵션으로 선택한다.
+- **실행 스크립트 연동**: `bin/run_multi_seed.sh`, `bin/server_run.sh`, `bin/quick_experiment.sh`는 모두 `scripts/run_with_wandb.py`를 통해 실행된다. 커스텀 알고리즘을 기본 옵션에 노출하려면 해당 스크립트에 분기를 추가하거나 README 예시 커맨드를 갱신한다.
+- **스모크 테스트**: `scripts/run_once.py`는 레지스트리가 정상 동작하는지 확인하는 최소 실행 스크립트이다. 새 알고리즘 이름과 간단한 `with` 인자를 넣어 단일 실험이 성공하는지 점검한다.
 
-> 참고: 커스텀 코드를 작성하기 전에는 `plugins/` 디렉토리가 비어 있어도 괜찮습니다. 새 패키지를 만들 때는 `__init__.py`를 꼭 생성해 Python이 패키지로 인식하도록 해 주세요.
+> 참고: 커스텀 코드를 작성하기 전에는 `plugins/` 디렉토리가 비어 있어도 무방하다. 새 패키지를 만들 때는 `__init__.py`를 추가해 Python이 패키지로 인식하도록 한다.
 
 ### YAML 기반 실험 템플릿
 
-`configs/exp/` 디렉토리에 실험용 YAML을 만들어 두면, 스크립트를 실행할 때 `exp_config=<이름>`으로 호출하여 하이퍼파라미터를 일괄 적용할 수 있습니다.
+`configs/exp/` 디렉토리에 실험용 YAML을 만들어 두면, 스크립트를 실행할 때 `exp_config=<이름>`으로 호출하여 하이퍼파라미터를 일괄 적용할 수 있다.
 
 ```yaml
 # configs/exp/smac_qmix_rnn.yaml 예시
@@ -176,7 +176,7 @@ python scripts/run_with_wandb.py --exp-config=smac_qmix_rnn
 RUN_MULTI_SEED_WORKERS=4 ./bin/run_multi_seed.sh qmix sc2 5 smac1 exp_config=smac_qmix_rnn
 ```
 
-YAML 파일의 `with` 블록은 EPyMARL의 `with` 인자로 변환되며, CLI에서 넘긴 인자가 있으면 YAML 값을 덮어씁니다. 덕분에 `use_rnn`/`obs_last_action`처럼 토글이 필요한 옵션을 쉽게 전환할 수 있습니다.
+YAML 파일의 `with` 블록은 EPyMARL의 `with` 인자로 변환되며, CLI에서 넘긴 인자가 있으면 YAML 값을 덮어씁니다. 덕분에 `use_rnn`/`obs_last_action`처럼 토글이 필요한 옵션을 쉽게 전환할 수 있다.
 
 ## 📊 Weights & Biases (W&B) 통합
 
@@ -194,7 +194,7 @@ wandb login
 mkdir -p configs
 ```
 
-설정 파일 예시는 아래 섹션에서 생성됩니다.
+설정 파일 예시는 아래 섹션에 정리했다.
 
 ## 🛠 알고리즘 개발 및 실험
 
@@ -291,14 +291,14 @@ python external/epymarl/plot_results.py --results_dir results/ --env_name "penal
 
 ## 📜 라이선스
 
-이 프로젝트는 Apache License v2.0 하에 배포됩니다. EPyMARL 서브모듈도 동일한 라이선스를 따릅니다.
+이 프로젝트는 Apache License v2.0 하에 배포된다. EPyMARL 서브모듈도 동일한 라이선스를 따른다.
 
 ## 🤝 기여하기
 
-1. 이슈를 통해 문제점이나 개선사항을 공유해주세요
-2. 새로운 알고리즘이나 환경 추가 시 적절한 테스트와 문서화를 포함해주세요
-3. 서브모듈 수정이 필요한 경우, 먼저 상위 레벨에서의 해결 방안을 검토해주세요
+1. 이슈를 통해 문제점이나 개선사항을 공유해라
+2. 새로운 알고리즘이나 환경 추가 시 적절한 테스트와 문서화를 포함해라
+3. 서브모듈 수정이 필요한 경우, 먼저 상위 레벨에서의 해결 방안을 검토해라
 
 ---
 
-*이 README는 EPyMARL 서브모듈을 효과적으로 활용하여 MARL 연구를 수행하기 위한 가이드입니다.*
+*이 README는 EPyMARL 서브모듈을 효과적으로 활용하여 MARL 연구를 수행하기 위한 가이드이다.*
