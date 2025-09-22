@@ -1,12 +1,12 @@
-# configs/exp/my_qmix_smacv2.yaml
-algo: my_qmix
+# configs/exp/vdn_smacv2.yaml — placeholder until custom wrappers are ready.
+algo: vdn
 env: sc2v2
 with:
   seed: 1
   env_args.map_name: "protoss_5_vs_5"
-  common_reward: false      # 일반합 실험 시 개별 보상 유지
+  common_reward: false
   t_max: 2000000
   batch_size: 32
 wandb:
   project: MARL-EPy
-  group: qmix-smacv2
+  group: vdn-smacv2

@@ -4,11 +4,11 @@
 알고리즘 개발 및 테스트 시 짧은 실험으로 빠르게 검증할 수 있습니다.
 
 사용법:
-  ./scripts/quick_experiment.sh <algorithm> <environment> [additional_args...]
+  ./bin/quick_experiment.sh <algorithm> <environment> [additional_args...]
 
 예시:
-  ./scripts/quick_experiment.sh qmix matrix_penalty
-  ./scripts/quick_experiment.sh mappo lbf_small common_reward=False
+  ./bin/quick_experiment.sh qmix matrix_penalty
+  ./bin/quick_experiment.sh mappo lbf_small common_reward=False
 """
 
 if [ $# -lt 2 ]; then
@@ -29,6 +29,7 @@ ADDITIONAL_ARGS="$@"
 
 # 스크립트 위치 기준으로 경로 설정
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 echo "=== 빠른 실험 실행 ==="
 echo "알고리즘: $ALGORITHM"
@@ -36,6 +37,8 @@ echo "환경: $ENVIRONMENT"
 echo "===================="
 
 # 환경별 설정
+ENV_CONFIG="gymma"
+
 case $ENVIRONMENT in
     "matrix_penalty")
         ENV_KEY="matrixgames:penalty-100-nostate-v0"
@@ -92,7 +95,7 @@ case $ENVIRONMENT in
 esac
 
 # 실험 실행
-python "$SCRIPT_DIR/run_with_wandb.py" \
+python "$PROJECT_ROOT/scripts/run_with_wandb.py" \
     --config="$ALGORITHM" \
     --env-config="$ENV_CONFIG" \
     --wandb-config="$WANDB_CONFIG" \

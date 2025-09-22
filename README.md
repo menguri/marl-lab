@@ -140,6 +140,19 @@ python external/epymarl/src/main.py --config=qmix --env-config=gymma with env_ar
 python scripts/run_with_wandb.py --config=mappo --env-config=gymma --wandb-config=foraging env_args.key="lbforaging:Foraging-8x8-2p-3f-v3" common_reward=False
 ```
 
+## 🧩 커스텀 확장 설계 가이드
+
+향후 자체 알고리즘이나 환경 래퍼를 추가할 때는 다음 순서를 따르면 됩니다. 서브모듈(`external/epymarl`)은 수정하지 않고, 우리 저장소에서만 변경이 일어나도록 유지하세요.
+
+- **코드 배치**: `plugins/` 하위에 새 패키지를 만들고 코드를 둡니다. 예) learner → `plugins/algos/<알고리즘>/learner.py`, 환경 래퍼 → `plugins/custom_envs/<환경>/wrapper.py`.
+- **레지스트리 등록**: `plugins/registry.py`의 `register_plugins()` 함수 안에서 방금 만든 모듈을 import 한 뒤 `LEARNERS[...]`, `MACS[...]`, `ENVS[...]`에 키를 추가합니다. 이 단계가 있어야 EPyMARL이 커스텀 클래스를 인식합니다.
+- **환경 메타데이터 갱신**: 새 환경 키를 노출하고 싶다면 `configs/python/environments.py`에 `EnvironmentConfig` 항목을 추가해 설명, 기본 인자, 권장 알고리즘을 정의합니다. `scripts/unified_experiment.py`와 CLI 도구들이 이 테이블을 참조합니다.
+- **W&B 프리셋 추가**: 로깅 설정이 기존과 다르면 `configs/wandb/`에 새로운 YAML을 만들고, 실행 시 `--wandb-config=<이름>` 옵션으로 선택합니다.
+- **실행 스크립트 연동**: `bin/run_multi_seed.sh`, `bin/server_run.sh`, `bin/quick_experiment.sh`는 모두 `scripts/run_with_wandb.py`를 통해 실행됩니다. 커스텀 알고리즘을 기본 옵션에 노출하려면 이 스크립트들에 분기를 추가하거나 README 예시 커맨드를 갱신하세요.
+- **스모크 테스트**: `scripts/run_once.py`는 레지스트리가 정상 동작하는지 빠르게 확인하기 위한 최소 실행 스크립트입니다. 새 알고리즘 이름과 간단한 `with` 인자를 넣어 1회 학습이 되는지 확인하세요.
+
+> 참고: 커스텀 코드를 작성하기 전에는 `plugins/` 디렉토리가 비어 있어도 괜찮습니다. 새 패키지를 만들 때는 `__init__.py`를 꼭 생성해 Python이 패키지로 인식하도록 해 주세요.
+
 ## 📊 Weights & Biases (W&B) 통합
 
 ### W&B 설정 (서브모듈 수정 없이)
@@ -167,11 +180,11 @@ mkdir -p configs
 **📋 VDN + SMAC 3m 환경 실험 (추천)**
 ```bash
 # VDN 알고리즘으로 SMAC 3m 환경에서 5개 시드 실험 (W&B 로깅 포함)
-./scripts/run_multi_seed.sh vdn sc2 5 smac1
+./bin/run_multi_seed.sh vdn sc2 5 smac1
 
 # 다른 SMAC 맵 사용시 (8m, 2s3z 등)
-./scripts/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=8m
-./scripts/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=2s3z
+./bin/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=8m
+./bin/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=2s3z
 ```
 
 **🔧 다른 환경 실험**
@@ -180,10 +193,10 @@ mkdir -p configs
 python scripts/unified_experiment.py --algorithm qmix --environment matrix_penalty --seeds 5
 
 # Matrix Games
-./scripts/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
+./bin/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
 
 # Level-based Foraging
-./scripts/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 5 foraging common_reward=False
+./bin/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 5 foraging common_reward=False
 ```
 
 #### 알고리즘 성능 비교
@@ -222,14 +235,15 @@ python external/epymarl/plot_results.py --results_dir results/ --env_name "penal
 ## 📁 커스텀 설정 및 확장
 
 ### configs/ 디렉토리 활용
-- `configs/algorithms/`: 새로운 알고리즘 설정
-- `configs/environments/`: 커스텀 환경 설정
+- `configs/python/`: 환경 레지스트리 및 추천 정보
+- `configs/exp/`: 실험용 YAML 템플릿
 - `configs/wandb/`: W&B 프로젝트별 설정
+- `configs/server/`: 서버 공용 환경 변수 스크립트
 
 ### plugins/ 디렉토리 활용
-- 새로운 환경 래퍼
-- 커스텀 네트워크 아키텍처
-- 실험 후처리 스크립트
+- 추후 작성할 커스텀 learner/controller/env 래퍼
+- EPyMARL 레지스트리에 연결될 보조 유틸리티
+- 테스트용 스모크 스크립트 및 어댑터
 
 ## 🔧 개발 가이드라인
 

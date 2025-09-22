@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-from configs.environments import ENVIRONMENTS, get_environment_config
+from configs.python.environments import ENVIRONMENTS, get_environment_config
 
 # 호환성을 위한 전환 사전
 COMPATIBILITY_ENVIRONMENTS = {

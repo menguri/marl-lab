@@ -19,7 +19,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from configs.environments import (
+from configs.python.environments import (
     ENVIRONMENTS, ALGORITHM_RECOMMENDATIONS, 
     get_environment_config, get_supported_environments,
     get_algorithm_recommendations, filter_environments_by_category
@@ -104,7 +104,7 @@ def run_experiment(algorithm: str, environment: str, wandb_config: str = None,
     
     else:
         # 다중 시드 실험
-        multi_seed_script = script_dir / "run_multi_seed.sh"
+        multi_seed_script = project_root / "bin" / "run_multi_seed.sh"
         env_key = env_config.key
         cmd = [
             str(multi_seed_script),

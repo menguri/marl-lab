@@ -50,23 +50,28 @@ python scripts/unified_experiment.py --algorithm mappo --environment lbf_medium 
 
 ## 🔧 기존 스크립트들 (호환성)
 
+> 🗂️ 실행 가능한 셸 스크립트는 `bin/` 디렉토리로 이동했습니다.
+
 ### `run_with_wandb.py` - W&B 설정 통합 스크립트
 ```bash
 python scripts/run_with_wandb.py --config=qmix --env-config=gymma --wandb-config=matrix_games env_args.key="matrixgames:penalty-100-nostate-v0"
 ```
 
-### `run_multi_seed.sh` - 다중 시드 실험
+### `run_multi_seed.sh` (`bin/`) - 다중 시드 실험
 ```bash
-./scripts/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
-./scripts/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 3 foraging common_reward=False
+./bin/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
+./bin/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 3 foraging common_reward=False
+
+# 동시에 여러 시드를 돌리려면 환경 변수를 지정하세요.
+RUN_MULTI_SEED_WORKERS=4 ./bin/run_multi_seed.sh ...
 ```
 
-### `quick_experiment.sh` - 빠른 실험
+### `quick_experiment.sh` (`bin/`) - 빠른 실험
 ```bash
-./scripts/quick_experiment.sh qmix matrix_penalty
-./scripts/quick_experiment.sh mappo lbf_small common_reward=False
-./scripts/quick_experiment.sh qmix smac_3s5z
-./scripts/quick_experiment.sh vdn smac2_terran
+./bin/quick_experiment.sh qmix matrix_penalty
+./bin/quick_experiment.sh mappo lbf_small common_reward=False
+./bin/quick_experiment.sh qmix smac_3s5z
+./bin/quick_experiment.sh vdn smac2_terran
 ```
 
 ### `algorithm_comparison.py` - 알고리즘 성능 비교
@@ -75,10 +80,10 @@ python scripts/algorithm_comparison.py --env matrix_penalty --algorithms qmix vd
 python scripts/algorithm_comparison.py --env lbf_small --algorithms mappo ippo maa2c --seeds 5 --individual-rewards
 ```
 
-### `server_run.sh` - 서버 환경 실행
+### `server_run.sh` (`bin/`) - 서버 환경 실행
 ```bash
 # 서버 설정 후
-./scripts/server_run.sh qmix smac_3s5z server_default
+./bin/server_run.sh qmix smac_3s5z server_default
 ```
 
 ## 📊 지원하는 환경들 (총 30+개)
@@ -174,7 +179,7 @@ python scripts/unified_experiment.py --algorithm qmix --environment matrix_penal
 
 **기존 다중 시드:**
 ```bash
-./scripts/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
+./bin/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games
 ```
 
 **새 방식:**
@@ -201,7 +206,7 @@ python scripts/unified_experiment.py --action list --category smac1
 ### 서버 설정 오류
 ```bash
 # 서버 환경 설정 확인
-source configs/server_setup.sh
+source configs/server/setup.sh
 echo $WANDB_ENTITY
 ```
 

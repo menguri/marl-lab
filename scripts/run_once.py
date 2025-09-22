@@ -9,9 +9,8 @@ sys.path.insert(0, str(ROOT / "external" / "epymarl" / "src"))
 
 # plugins 다음 (registry를 찾기 위해 필요)
 sys.path.insert(1, str(ROOT))
-sys.path.insert(2, str(ROOT / "plugins"))
 
-import registry  # ← REGISTRY 등록
+from plugins import registry as _plugins_registry  # noqa: F401  # ensures hooks load
 
 def run(algo="qmix", env="sc2v2", with_args=None):
     cmd = [
@@ -28,10 +27,10 @@ def run(algo="qmix", env="sc2v2", with_args=None):
 
 if __name__ == "__main__":
     run(
-      algo="my_qmix",
-      env="sc2v2",
-      with_args=[
-        'seed=1',
-        'env_args.map_name="protoss_5_vs_5"',
-      ],
+        algo="qmix",
+        env="sc2v2",
+        with_args=[
+            'seed=1',
+            'env_args.map_name="3m"',
+        ],
     )

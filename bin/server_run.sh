@@ -4,11 +4,11 @@
 환경 변수와 서버 최적화 설정을 자동으로 적용합니다.
 
 사용법:
-  ./scripts/server_run.sh <algorithm> <environment> [wandb_config] [additional_args...]
+  ./bin/server_run.sh <algorithm> <environment> [wandb_config] [additional_args...]
 
 예시:
-  ./scripts/server_run.sh qmix smac2_terran server_default
-  ./scripts/server_run.sh mappo lbf_small foraging common_reward=False
+  ./bin/server_run.sh qmix smac2_terran server_default
+  ./bin/server_run.sh mappo lbf_small foraging common_reward=False
 """
 
 # 서버 설정 로드
@@ -16,10 +16,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # 서버 환경 설정 로드
-if [ -f "$PROJECT_ROOT/configs/server_setup.sh" ]; then
-    source "$PROJECT_ROOT/configs/server_setup.sh"
+if [ -f "$PROJECT_ROOT/configs/server/setup.sh" ]; then
+    source "$PROJECT_ROOT/configs/server/setup.sh"
 else
-    echo "경고: 서버 설정 파일을 찾을 수 없습니다: $PROJECT_ROOT/configs/server_setup.sh"
+    echo "경고: 서버 설정 파일을 찾을 수 없습니다: $PROJECT_ROOT/configs/server/setup.sh"
 fi
 
 # 인자 검증
@@ -62,7 +62,7 @@ case $ENVIRONMENT in
         ;;
     *)
         # 직접 설정한 환경 키 - run_with_wandb.py 직접 사용
-        python "$SCRIPT_DIR/run_with_wandb.py" \
+        python "$PROJECT_ROOT/scripts/run_with_wandb.py" \
             --config="$ALGORITHM" \
             --env-config="gymma" \
             --wandb-config="$WANDB_CONFIG" \

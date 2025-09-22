@@ -1,30 +1,57 @@
-# plugins/registry.py
-# EPyMARL 내부 REGISTRY 경로/키는 버전에 따라 다를 수 있음(핵심: add만 하면 됨)
+"""EPyMARL registry extension hooks.
 
-# 이미 run_once.py가 epymarl/src를 sys.path에 넣어둔 상태
-# → 각 서브시스템의 REGISTRY를 개별 import
-from controllers import REGISTRY as MACS
-from learners import REGISTRY as LEARNERS
-from envs import REGISTRY as ENVS
+Create your own learners/controllers/env wrappers inside ``plugins/`` and
+import/register them in :func:`register_plugins`.  This module is imported by
+utility scripts (for example ``scripts/run_once.py``) before executing the core
+EPyMARL entrypoint so that your components are visible to the upstream
+``REGISTRY`` tables.
+"""
+
+from __future__ import annotations
+
+from typing import Callable
+
+try:
+    from controllers import REGISTRY as MACS
+    from learners import REGISTRY as LEARNERS
+    from envs import REGISTRY as ENVS
+except ImportError:
+    # When EPyMARL is not on the path yet (e.g. docs build), just provide
+    # fallbacks so that importing this file does not crash.
+    MACS = {}
+    LEARNERS = {}
+    ENVS = {}
 
 
-# ── 스모크: 업스트림 basic_mac 을 내 별칭으로도 부르기
-if "basic_mac" in MACS:
-    MACS["my_mac"] = MACS["basic_mac"]
-    
-    
-# 
-from plugins.algos.my_qmix.my_q_learner import PatchedQLearner
-LEARNERS["my_q_learner"] = PatchedQLearner
+def register_plugins(register: Callable[[], None] | None = None) -> None:
+    """Entry point for custom registrations.
 
-# 1) 최소 smoke: 업스트림 qmix를 "내 별칭"으로도 부를 수 있게 alias
-# from external.epymarl.src.controllers import basic_controller as ep_qmix_controller
-# REGISTRY["mac"]["my_qmix"] = ep_qmix_controller.BasicMAC
+    Parameters
+    ----------
+    register:
+        Optional callable for dependency injection in tests.  When ``None``
+        (default) this function will look for inline registration code written
+        by the user.  Keep your imports inside this function so that EPyMARL is
+        only touched when the file is executed.
+    """
 
-# # 2) 내가 만든 믹서/로스/환경도 이런 식으로 등록(나중에 채움)
-# from plugins.algos.my_qmix.mixer import MyMixer
-# REGISTRY["mixer"]["my_mixer"] = MyMixer
+    if register is not None:
+        register()
+        return
 
-# # 3) 환경 래퍼도 등록
-# from plugins.envs.my_env.wrapper import MyEnvWrapper
-# REGISTRY["env"]["my_env"] = MyEnvWrapper
+    # Example (to be filled in by the user once their components exist):
+    # from plugins.algos.my_algo.learner import MyLearner
+    # LEARNERS["my_learner"] = MyLearner
+    #
+    # from plugins.controllers.my_controller import MyController
+    # MACS["my_controller"] = MyController
+    #
+    # from plugins.custom_envs.my_wrapper import MyEnvWrapper
+    # ENVS["my_env"] = MyEnvWrapper
+    pass
+
+
+# Execute immediately so that simply importing this module registers
+# everything.  Downstream scripts should ``import plugins.registry`` without
+# touching register_plugins directly.
+register_plugins()

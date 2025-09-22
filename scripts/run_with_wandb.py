@@ -51,6 +51,9 @@ def build_epymarl_command(args, wandb_config):
         elif key in ['use_wandb', 'use_tensorboard', 'save_model', 'save_model_interval', 'common_reward', 'reward_scalarisation', 'log_interval', 'test_interval', 'buffer_cpu_only', 'use_cuda', 'batch_size_run', 't_max', 'test_nepisode']:
             if isinstance(value, bool):
                 cmd_parts.append(f"{key}={str(value).lower()}")
+            elif key in ['save_model_interval', 'log_interval', 'test_interval', 'batch_size_run', 't_max', 'test_nepisode']:
+                # 정수 타입 설정들은 따옴표 없이 전달
+                cmd_parts.append(f"{key}={value}")
             elif value is not None:
                 cmd_parts.append(f'{key}="{value}"')
     

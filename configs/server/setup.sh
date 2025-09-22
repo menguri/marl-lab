@@ -4,18 +4,18 @@
 W&B API 키와 환경 변수를 설정합니다.
 
 사용법:
-  source configs/server_setup.sh
+  source configs/server/setup.sh
   
 또는 .bashrc나 .zshrc에 추가:
-  echo "source ~/marl-lab/configs/server_setup.sh" >> ~/.bashrc
+  echo "source ~/marl-lab/configs/server/setup.sh" >> ~/.bashrc
 """
 
 # ------------------------------------------------
 # W&B 설정
 # ------------------------------------------------
-export WANDB_DIR="${HOME}/wandb_config"
-export WANDB_CONFIG_DIR="${HOME}/wandb_config"
-export WANDB_CACHE_DIR="${HOME}/wandb_config/cache"
+export WANDB_DIR="${HOME}/mingukang/wandb_config"
+export WANDB_CONFIG_DIR="${HOME}/mingukang/wandb_config"
+export WANDB_CACHE_DIR="${HOME}/mingukang/wandb_config/cache"
 
 # 디렉토리 생성
 mkdir -p "$WANDB_DIR" "$WANDB_CONFIG_DIR" "$WANDB_CACHE_DIR"
@@ -42,7 +42,7 @@ export WANDB_PROJECT="marl-lab"  # 기본 프로젝트명
 # ------------------------------------------------
 
 # CUDA 설정 (필요시)
-export CUDA_VISIBLE_DEVICES="0"  # 원하는 GPU 번호로 변경
+export CUDA_VISIBLE_DEVICES="1"  # 원하는 GPU 번호로 변경
 
 # StarCraft II 설정 (SMAC/SMAC2 사용시)
 export SC2PATH="${HOME}/StarCraftII"
@@ -55,7 +55,7 @@ export SC2PATH="${HOME}/StarCraftII"
 # ------------------------------------------------
 
 # 프로젝트 루트 디렉토리
-export MARL_LAB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export MARL_LAB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # 결과 저장 디렉토리
 export RESULTS_DIR="${MARL_LAB_ROOT}/results"
