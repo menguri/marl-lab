@@ -58,6 +58,28 @@ def format_with_arg(key: str, value: Any) -> str:
     # 문자열은 공백/콜론이 포함될 수 있으므로 큰따옴표로 감싼다
     return f'{key}="{value}"'
 
+def merge_with_arguments(primary: Iterable[str] | None, override: Iterable[str] | None) -> List[str]:
+    """중복 키를 제거하고 override 인자를 우선 적용한다."""
+
+    def arg_key(token: str) -> str | None:
+        if "=" not in token:
+            return None
+        return token.split("=", 1)[0]
+
+    merged: List[str] = []
+    for token_list in (primary or [], override or []):
+        for token in token_list:
+            if not token:
+                continue
+            key = arg_key(token)
+            if key:
+                for idx in range(len(merged) - 1, -1, -1):
+                    if arg_key(merged[idx]) == key:
+                        merged.pop(idx)
+                        break
+            merged.append(token)
+    return merged
+
 def build_epymarl_command(args, wandb_config):
     """EPyMARL 실행 명령어를 구성합니다."""
     epymarl_path = Path(__file__).parent.parent / "external" / "epymarl" / "src" / "main.py"
@@ -70,11 +92,12 @@ def build_epymarl_command(args, wandb_config):
         "with"
     ]
     
-    # EPyMARL 원본 인자들 추가 (실험 설정 → CLI 순으로 덮어쓰기)
-    if getattr(args, 'exp_with_args', None):
-        cmd_parts.extend(args.exp_with_args)
-    if args.epymarl_args:
-        cmd_parts.extend(args.epymarl_args)
+    combined_with_args = merge_with_arguments(
+        args.epymarl_args,
+        getattr(args, 'exp_with_args', None)
+    )
+    if combined_with_args:
+        cmd_parts.extend(combined_with_args)
 
     if len(cmd_parts) == 5:  # "with" 다음에 전달할 인자가 없다면 제거
         cmd_parts.pop()
