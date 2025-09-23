@@ -1,6 +1,16 @@
 .venv/
 __pycache__/
-results/
-wandb/
 *.pyc
+
+# Local environment
 .env
+
+# Experiment artifacts
+/results/
+**/results/
+/wandb/
+**/wandb/
+/report/
+/plot/outputs/
+/checkpoints/
+/logs/
