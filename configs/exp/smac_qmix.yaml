@@ -4,5 +4,10 @@ env_config: sc2
 wandb_config: smac1
 with:
   env_args.map_name: "3s_vs_5z"
+  env_args.difficulty: "7"
+  env_args.state_last_action: true
+  env_args.reward_scale: false
   use_rnn: true
   obs_last_action: true
+  epsilon_anneal_time: 500000
+  epsilon_finish: 0.1
