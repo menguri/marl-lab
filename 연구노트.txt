@@ -1,0 +1,3 @@
+[QMIX]
+- run_with_wandb.py에서 arg.parameters를 lower()하는 바람에 reward_scale=True로 잡혀있었음.
+기존의 reward에 20배 곱하여 sparse를 차단하는 것을 smac에 적용하고 있어 성능이 낮았던 것으로 보임.
