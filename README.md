@@ -140,6 +140,17 @@ python external/epymarl/src/main.py --config=qmix --env-config=gymma with env_ar
 python scripts/run_with_wandb.py --config=mappo --env-config=gymma --wandb-config=foraging env_args.key="lbforaging:Foraging-8x8-2p-3f-v3" common_reward=False
 ```
 
+### 4. 서브모듈 패치 적용
+
+EPyMARL 서브모듈은 그대로 두고, 필요한 수정만 패치 형태로 보관합니다. 저장소 루트의 `patches/epymarl/` 아래에 패치 파일이 있으며, 아래 스크립트로 적용할 수 있습니다.
+
+```bash
+# 서브모듈 초기화 후 한 번 실행 (git pull, submodule update 이후 반복 권장)
+./scripts/apply_epymarl_patches.sh
+```
+
+스크립트는 각 패치를 적용하기 전에 `git apply --check`로 검증하고, 이미 적용된 경우 자동으로 건너뜁니다. 충돌이 발생하면 패치 내용을 최신 버전에 맞게 갱신한 뒤 다시 실행해주세요.
+
 ## 🧩 커스텀 확장 설계 가이드
 
 향후 자체 알고리즘이나 환경 래퍼를 추가할 때는 아래 절차를 따른다. 서브모듈(`external/epymarl`)은 수정하지 않고, 상위 저장소에서만 변경이 일어나도록 유지한다.

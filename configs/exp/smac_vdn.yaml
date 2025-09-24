@@ -3,7 +3,7 @@ algo: vdn
 env_config: sc2
 wandb_config: smac1
 with:
-  env_args.map_name: "3s_vs_5z"
+  env_args.map_name: "3s5z"
   env_args.difficulty: "7"
   env_args.state_last_action: true
   env_args.reward_scale: false
