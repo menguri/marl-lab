@@ -9,5 +9,5 @@ with:
   env_args.reward_scale: false
   use_rnn: true
   obs_last_action: true
-  epsilon_anneal_time: 500000
-  epsilon_finish: 0.1
+  epsilon_anneal_time: 100000
+  epsilon_finish: 0.05
