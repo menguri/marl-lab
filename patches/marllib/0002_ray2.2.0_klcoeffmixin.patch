@@ -1,0 +1,32 @@
+--- a/external/marllib/marllib/marl/algos/core/__init__.py
++++ b/external/marllib/marllib/marl/algos/core/__init__.py
+@@ -20,12 +20,22 @@
+ # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ # SOFTWARE.
+ 
+-from ray.rllib.agents.ppo.ppo_torch_policy import KLCoeffMixin
+ import gym
+ from ray.rllib.policy.policy import Policy
+-from ray.rllib.policy.torch_policy import EntropyCoeffSchedule, \
+-    LearningRateSchedule
+-    LearningRateSchedule, KLCoeffMixin
+-from ray.rllib.utils.typing import TrainerConfigDict
++from ray.rllib.utils.typing import TrainerConfigDict
++
++# RLlib version-compat import for KLCoeffMixin
++# 2.x: ray.rllib.algorithms.*, 1.x: ray.rllib.agents.*, some builds: ray.rllib.policy.torch_policy
++try:
++    # RLlib 2.x
++    from ray.rllib.algorithms.ppo.ppo_torch_policy import KLCoeffMixin
++except ModuleNotFoundError:
++    try:
++        # RLlib 1.x
++        from ray.rllib.agents.ppo.ppo_torch_policy import KLCoeffMixin
++    except ModuleNotFoundError:
++        # Fallback (legacy)
++        from ray.rllib.policy.torch_policy import KLCoeffMixin
++
++from ray.rllib.policy.torch_policy import (
++    EntropyCoeffSchedule,
++    LearningRateSchedule,
++)

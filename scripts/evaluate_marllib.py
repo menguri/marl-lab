@@ -6,10 +6,24 @@ import argparse
 from pathlib import Path
 from typing import Dict
 
-from marllib import marl
+import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+PATCH_SCRIPT = ROOT / "scripts" / "apply_marllib_patches.sh"
 
+def ensure_patches() -> None:
+    if PATCH_SCRIPT.exists() and PATCH_SCRIPT.is_file():
+        subprocess.run([str(PATCH_SCRIPT)], check=True, capture_output=True, text=True)
+
+# Ensure patches are applied before any marllib code is imported
+ensure_patches()
+
+# external/marllib 디렉터리를 경로에 추가하여, 그 안의 'marllib' 패키지를 찾도록 합니다.
+sys.path.insert(0, str(ROOT / "external" / "marllib"))
+sys.path.insert(0, str(ROOT))
+
+from marllib.marl import api as marl
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate MARLlib checkpoints")

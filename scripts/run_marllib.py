@@ -3,27 +3,40 @@
 from __future__ import annotations
 
 import argparse
+import sys
 import os
 from pathlib import Path
 from typing import List
 
 import subprocess
 
-from marllib import marl
 
+ROOT = Path(__file__).resolve().parents[1]
+PATCH_SCRIPT = ROOT / "scripts" / "apply_marllib_patches.sh"
+
+def ensure_patches() -> None:
+    if PATCH_SCRIPT.exists() and PATCH_SCRIPT.is_file():
+        # Run and capture output to prevent it from cluttering the main output
+        subprocess.run([str(PATCH_SCRIPT)], check=True, capture_output=True, text=True)
+
+# Ensure patches are applied before any marllib code is imported
+ensure_patches()
+
+# external/marllib 디렉터리를 경로에 추가하여, 그 안의 'marllib' 패키지를 찾도록 합니다.
+sys.path.insert(0, str(ROOT / "external" / "marllib"))
+sys.path.insert(0, str(ROOT))
+
+from marllib.marl import api as marl
 from wandb_utils import apply_wandb_env, load_wandb_config  # noqa: E402
-
 try:
     from ray.tune.integration.wandb import WandbLoggerCallback
 except ImportError:  # pragma: no cover
     WandbLoggerCallback = None
 
-ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_LOCAL_DIR = ROOT / "results" / "marllib"
 DEFAULT_TIMESTEPS = 2_000_000
 DEFAULT_STOP_REWARD = float("inf")
-DEFAULT_CHECKPOINT_FREQ = 100
-PATCH_SCRIPT = ROOT / "scripts" / "apply_marllib_patches.sh"
+DEFAULT_CHECKPOINT_FREQ = 200  # W&B config에서 200으로 설정했으므로 기본값도 200으로 변경
 
 MPE_MAPS = {
     "simple_spread",
@@ -65,10 +78,6 @@ def login_to_wandb_if_possible() -> None:
         wandb.login(key=api_key, relogin=True)
     except Exception as exc:  # pragma: no cover - best effort only
         print(f"[wandb] 자동 로그인에 실패했습니다: {exc}")
-
-def ensure_patches() -> None:
-    if PATCH_SCRIPT.exists():
-        subprocess.run([str(PATCH_SCRIPT)], check=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -122,11 +131,6 @@ def main() -> None:
     wandb_settings, wandb_overrides = load_wandb_config(args.wandb_config)
     apply_wandb_env(wandb_settings)
     login_to_wandb_if_possible()
-    ensure_patches()
-
-    if PATCH_SCRIPT.exists():
-        os.system(f'"{PATCH_SCRIPT}"')
-
     if "timesteps" in wandb_overrides and args.timesteps == DEFAULT_TIMESTEPS:
         args.timesteps = int(wandb_overrides["timesteps"])
     if "stop_reward" in wandb_overrides and args.stop_reward == DEFAULT_STOP_REWARD:
