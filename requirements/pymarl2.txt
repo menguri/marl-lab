@@ -17,7 +17,7 @@ probscale==0.2.5
 sacred==0.8.7
 tensorboard-logger==0.1.0
 wandb==0.15.12
-protobuf==3.20.3
+protobuf==4.25.8
 pysc2==4.0.6
 
 # PyTorch + CUDA 11.3 build (adjust to your CUDA/toolkit version if necessary)
