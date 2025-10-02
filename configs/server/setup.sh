@@ -1,14 +1,9 @@
 #!/bin/bash
-"""
-원격 서버 환경 설정 스크립트
-W&B API 키와 환경 변수를 설정합니다.
-
-사용법:
-  source configs/server/setup.sh
-  
-또는 .bashrc나 .zshrc에 추가:
-  echo "source ~/marl-lab/configs/server/setup.sh" >> ~/.bashrc
-"""
+# 원격 서버 환경 설정 스크립트
+# W&B API 키와 환경 변수를 설정합니다.
+# 사용법:
+#   source configs/server/setup.sh
+#   echo 'source ~/marl-lab/configs/server/setup.sh' >> ~/.bashrc
 
 # ------------------------------------------------
 # W&B 설정

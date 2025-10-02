@@ -1,0 +1,113 @@
+diff --git a/marllib/marl/algos/scripts/ippo.py b/marllib/marl/algos/scripts/ippo.py
+index cce2aa7..c44d96f 100644
+--- a/marllib/marl/algos/scripts/ippo.py
++++ b/marllib/marl/algos/scripts/ippo.py
+@@ -107,15 +107,22 @@ def run_ippo(model: Any, exp: Dict, run: Dict, env: Dict,
+     RUNNING_NAME = '_'.join([algorithm, arch, map_name])
+     model_path = restore_model(restore, exp)
+ 
+-    results = tune.run(IPPOTrainer,
+-                       name=RUNNING_NAME,
+-                       checkpoint_at_end=exp['checkpoint_end'],
+-                       checkpoint_freq=exp['checkpoint_freq'],
+-                       restore=model_path,
+-                       stop=stop,
+-                       config=config,
+-                       verbose=1,
+-                       progress_reporter=CLIReporter(),
+-                       local_dir=available_local_dir if exp["local_dir"] == "" else exp["local_dir"])
++    tune_kwargs = dict(
++        name=RUNNING_NAME,
++        checkpoint_at_end=exp['checkpoint_end'],
++        checkpoint_freq=exp['checkpoint_freq'],
++        restore=model_path,
++        stop=stop,
++        config=config,
++        verbose=1,
++        progress_reporter=CLIReporter(),
++        local_dir=available_local_dir if exp["local_dir"] == "" else exp["local_dir"]
++    )
++
++    callbacks = exp.get("tune_callbacks")
++    if callbacks:
++        tune_kwargs["callbacks"] = callbacks
++
++    results = tune.run(IPPOTrainer, **tune_kwargs)
+ 
+     return results
+
+diff --git a/marllib/marl/algos/scripts/mappo.py b/marllib/marl/algos/scripts/mappo.py
+index 565cb6e..082a2a6 100644
+--- a/marllib/marl/algos/scripts/mappo.py
++++ b/marllib/marl/algos/scripts/mappo.py
+@@ -109,15 +109,22 @@ def run_mappo(model: Any, exp: Dict, run: Dict, env: Dict,
+     RUNNING_NAME = '_'.join([algorithm, arch, map_name])
+     model_path = restore_model(restore, exp)
+ 
+-    results = tune.run(MAPPOTrainer,
+-                       name=RUNNING_NAME,
+-                       checkpoint_at_end=exp['checkpoint_end'],
+-                       checkpoint_freq=exp['checkpoint_freq'],
+-                       restore=model_path,
+-                       stop=stop,
+-                       config=config,
+-                       verbose=1,
+-                       progress_reporter=CLIReporter(),
+-                       local_dir=available_local_dir if exp["local_dir"] == "" else exp["local_dir"])
++    tune_kwargs = dict(
++        name=RUNNING_NAME,
++        checkpoint_at_end=exp['checkpoint_end'],
++        checkpoint_freq=exp['checkpoint_freq'],
++        restore=model_path,
++        stop=stop,
++        config=config,
++        verbose=1,
++        progress_reporter=CLIReporter(),
++        local_dir=available_local_dir if exp["local_dir"] == "" else exp["local_dir"]
++    )
++
++    callbacks = exp.get("tune_callbacks")
++    if callbacks:
++        tune_kwargs["callbacks"] = callbacks
++
++    results = tune.run(MAPPOTrainer, **tune_kwargs)
+ 
+     return results
+
+diff --git a/marllib/marl/algos/scripts/vdn_qmix_iql.py b/marllib/marl/algos/scripts/vdn_qmix_iql.py
+index 594437b..6bb265c 100644
+--- a/marllib/marl/algos/scripts/vdn_qmix_iql.py
++++ b/marllib/marl/algos/scripts/vdn_qmix_iql.py
+@@ -115,15 +115,22 @@ def run_joint_q(model: Any, exp: Dict, run: Dict, env: Dict,
+     RUNNING_NAME = '_'.join([algorithm, arch, map_name])
+     model_path = restore_model(restore, exp)
+ 
+-    results = tune.run(JQTrainer,
+-                       name=RUNNING_NAME,
+-                       checkpoint_at_end=exp['checkpoint_end'],
+-                       checkpoint_freq=exp['checkpoint_freq'],
+-                       restore=model_path,
+-                       stop=stop,
+-                       config=config,
+-                       verbose=1,
+-                       progress_reporter=CLIReporter(),
+-                       local_dir=available_local_dir if exp["local_dir"] == "" else exp["local_dir"])
++    tune_kwargs = dict(
++        name=RUNNING_NAME,
++        checkpoint_at_end=exp['checkpoint_end'],
++        checkpoint_freq=exp['checkpoint_freq'],
++        restore=model_path,
++        stop=stop,
++        config=config,
++        verbose=1,
++        progress_reporter=CLIReporter(),
++        local_dir=available_local_dir if exp["local_dir"] == "" else exp["local_dir"]
++    )
++
++    callbacks = exp.get("tune_callbacks")
++    if callbacks:
++        tune_kwargs["callbacks"] = callbacks
++
++    results = tune.run(JQTrainer, **tune_kwargs)
+ 
+     return results

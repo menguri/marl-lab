@@ -1,0 +1,24 @@
+diff --git a/src/utils/logging.py b/src/utils/logging.py
+index 5393b7f..2713429 100644
+--- a/src/utils/logging.py
++++ b/src/utils/logging.py
+@@ -21,6 +21,7 @@ class Logger:
+         self.use_tb = True
+ 
+     def setup_sacred(self, sacred_run_dict):
++        self.sacred_run = sacred_run_dict
+         self.sacred_info = sacred_run_dict.info
+         self.use_sacred = True
+ 
+@@ -38,6 +39,11 @@ class Logger:
+                 self.sacred_info["{}_T".format(key)] = [t]
+                 self.sacred_info[key] = [value]
+ 
++            try:
++                self.sacred_run.log_scalar(key, value, t)
++            except Exception:
++                pass
++
+     def print_recent_stats(self):
+         log_str = "Recent Stats | t_env: {:>10} | Episode: {:>8}\n".format(*self.stats["episode"][-1])
+         i = 0

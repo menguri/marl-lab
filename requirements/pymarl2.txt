@@ -1,0 +1,33 @@
+# PyMARL2 runtime dependencies (tested with Python 3.9/3.10)
+# Create a dedicated virtual environment before installing:
+#   conda create -n pymarl2 python=3.10
+#   conda activate pymarl2
+#   pip install -r requirements/pymarl2.txt
+
+absl-py==2.1.0
+numpy==1.23.5
+scipy==1.10.1
+matplotlib==3.8.4
+seaborn==0.13.2
+pyyaml==5.3.1
+pygame==2.5.2
+imageio==2.31.6
+snakeviz==2.2.0
+probscale==0.2.5
+sacred==0.8.7
+tensorboard-logger==0.1.0
+wandb==0.15.12
+protobuf==3.20.3
+pysc2==4.0.6
+
+# PyTorch + CUDA 11.3 build (adjust to your CUDA/toolkit version if necessary)
+torch==1.12.1+cu113
+torchvision==0.13.1+cu113
+torchaudio==0.12.1
+--extra-index-url https://download.pytorch.org/whl/cu113
+
+# Gym stack
+gym==0.21.0
+
+git+https://github.com/oxwhirl/smac.git@d6aab33f76abc3849c50463a8592a84f59a5ef84
+SMACv2 @ git+https://github.com/oxwhirl/smacv2.git@577ab5a2cff2391f8df582da5731ea9cd6adf3c6

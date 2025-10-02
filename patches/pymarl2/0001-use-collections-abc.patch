@@ -1,0 +1,21 @@
+diff --git a/src/main.py b/src/main.py
+index 3cb6d2f..0239b5a 100644
+--- a/src/main.py
++++ b/src/main.py
+@@ -1,6 +1,7 @@
+ import numpy as np
+ import os
+ import collections
++import collections.abc as collections_abc
+ from os.path import dirname, abspath, join
+ from copy import deepcopy
+ from sacred import Experiment, SETTINGS
+@@ -56,7 +57,7 @@ def _get_config(params, arg_name, subfolder):
+ 
+ def recursive_dict_update(d, u):
+     for k, v in u.items():
+-        if isinstance(v, collections.Mapping):
++        if isinstance(v, collections_abc.Mapping):
+             d[k] = recursive_dict_update(d.get(k, {}), v)
+         else:
+             d[k] = v

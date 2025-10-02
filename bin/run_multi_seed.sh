@@ -1,187 +1,262 @@
 #!/bin/bash
-"""
-여러 시드로 EPyMARL 실험을 실행하는 스크립트
-시드 다양화를 통해 통계적으로 신뢰할 수 있는 결과를 얻습니다.
+# 멀티 시드 실험 실행 스크립트 (PyMARL2 & MARLlib)
+#
+# 예시
+#   RUN_MULTI_SEED_WORKERS=2 ./bin/run_multi_seed.sh pymarl2 qmix sc2 5 --map 3s5z --with t_max=3000000
+#   ./bin/run_multi_seed.sh pymarl2 qmix sc2v2 3 --map protoss_5_vs_5 --wandb smac2
+#   ./bin/run_multi_seed.sh marllib mappo mpe 4 --map simple_tag --timesteps 2000000 --num-workers 8
+#   ./bin/run_multi_seed.sh marllib mappo overcooked 2 --map cramped_room --num-gpus 1 --local-mode
 
-사용법:
-  ./bin/run_multi_seed.sh <algorithm> <environment_key> <num_seeds> [wandb_config] [additional_args...]
+set -euo pipefail
 
-예시:
-  ./bin/run_multi_seed.sh qmix "matrixgames:penalty-100-nostate-v0" 5 matrix_games env_args.time_limit=25
-  ./bin/run_multi_seed.sh mappo "lbforaging:Foraging-8x8-2p-3f-v3" 3 foraging common_reward=False
-  ./bin/run_multi_seed.sh vdn sc2 5 smac1 env_args.map_name=3m
+usage() {
+    cat <<'EOF'
+Usage: run_multi_seed.sh <framework> <algorithm> <environment> <num_seeds> [options]
+  framework : pymarl2 | marllib
+  algorithm : 학습 알고리즘 이름 (예: qmix, mappo)
+  environment : 프레임워크별 환경 키 (예: sc2, sc2v2, mpe, overcooked)
+  num_seeds  : 실행할 시드 개수 (양의 정수)
 
-동시 실행:
-  RUN_MULTI_SEED_WORKERS=N 환경 변수를 설정하면 최대 N개의 실험을 동시에 실행합니다.
-  예) RUN_MULTI_SEED_WORKERS=4 ./bin/run_multi_seed.sh qmix ...
-"""
+Common options:
+  --workers <int>       동시에 실행할 실험 수 (기본 RUN_MULTI_SEED_WORKERS 또는 1)
+  --start-seed <int>    시작 시드 값 (기본 1000)
+  --timesteps <int>     PyMARL2 t_max 또는 MARLlib 학습 스텝
 
-# 인자 검증
-if [ $# -lt 3 ]; then
-    echo "사용법: $0 <algorithm> <environment_key> <num_seeds> [wandb_config] [additional_args...]"
-    echo ""
-    echo "예시:"
-    echo "  $0 qmix \"matrixgames:penalty-100-nostate-v0\" 5 matrix_games env_args.time_limit=25"
-    echo "  $0 mappo \"lbforaging:Foraging-8x8-2p-3f-v3\" 3 foraging common_reward=False"
-    echo "  $0 vdn sc2 5 smac1 env_args.map_name=3m"
+PyMARL2 전용 옵션:
+  --wandb <name>        W&B 프리셋 이름 (기본 default)
+  --env-config <name>   PyMARL2 환경 설정 이름 (기본 sc2)
+  --map <name>          SMAC/SMACv2 맵 이름 (env_args.map_name)
+  --with <key=value>    추가 with 인자 (필요시 반복)
+  --exp-config <name>   configs/exp/ 템플릿 이름
+
+MARLlib 전용 옵션:
+  --map <name>          PettingZoo/Overcooked 레이아웃 (필수)
+  --share-policy <mode> 정책 공유 방식 (all/group/individual)
+  --num-workers <int>   Ray rollout worker 수 (기본 4)
+  --num-gpus <int>      사용 GPU 수 (기본 0)
+  --local-dir <path>    결과 저장 경로 (기본 results/marllib)
+  --checkpoint-freq <n> 체크포인트 주기 (training_iteration)
+  --stop-reward <val>   목표 평균 리워드
+  --core-arch <arch>    모델 구조 (예: mlp, rnn)
+  --encode-layer <spec> 인코더 레이어 (예: 128-256)
+  --local-mode          Ray local mode (디버그용)
+  --force-coop          환경을 강제로 공통 보상으로 설정
+EOF
+}
+
+if [ $# -lt 4 ]; then
+    usage
     exit 1
 fi
 
-# 서버 설정 로드
+FRAMEWORK=$1
+ALGORITHM=$2
+TARGET_ENV=$3
+NUM_SEEDS=$4
+shift 4
+
+case "$FRAMEWORK" in
+    pymarl2|marllib) ;;
+    *) echo "지원하지 않는 프레임워크: $FRAMEWORK" >&2; exit 1;;
+ esac
+
+if ! [[ $NUM_SEEDS =~ ^[0-9]+$ ]] || [ "$NUM_SEEDS" -le 0 ]; then
+    echo "num_seeds 값이 잘못되었습니다: $NUM_SEEDS" >&2
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT" || exit 1
-if [ -f "$PROJECT_ROOT/configs/server/setup.sh" ]; then
-    source "$PROJECT_ROOT/configs/server/setup.sh"
-else
-    echo "경고: 서버 설정 파일을 찾을 수 없습니다: $PROJECT_ROOT/configs/server/setup.sh"
+
+SETUP_SCRIPT="$PROJECT_ROOT/configs/server/setup.sh"
+if [ -f "$SETUP_SCRIPT" ]; then
+    # shellcheck disable=SC1090
+    source "$SETUP_SCRIPT"
 fi
 
-# 인자 설정
-ALGORITHM=$1
-ENV_KEY=$2
-NUM_SEEDS=$3
-WANDB_CONFIG=${4:-"default"}
+if [ "$FRAMEWORK" = "pymarl2" ]; then
+    PATCH_SCRIPT="$PROJECT_ROOT/scripts/apply_pymarl2_patches.sh"
+    if [ -x "$PATCH_SCRIPT" ]; then
+        "$PATCH_SCRIPT"
+    fi
+fi
 
-# 추가 인자들 (4번째 인자부터) - 배열로 보관
-shift 4
-RAW_ADDITIONAL_ARGS=("$@")
-ADDITIONAL_ARGS=()
+MAX_WORKERS=${RUN_MULTI_SEED_WORKERS:-1}
+START_SEED=1000
+
+WANDB_CONFIG="default"
+ENV_CONFIG="sc2"
+MAP_NAME=""
+WITH_ARGS=()
 EXP_CONFIG=""
 
-for arg in "${RAW_ADDITIONAL_ARGS[@]}"; do
-    if [[ "$arg" == RUN_MULTI_SEED_WORKERS=* ]]; then
-        echo "경고: RUN_MULTI_SEED_WORKERS는 인자가 아니라 환경 변수로 설정하세요 (예: RUN_MULTI_SEED_WORKERS=4 $0 ...)."
-        continue
-    fi
-    if [[ "$arg" == exp_config=* ]]; then
-        EXP_CONFIG="${arg#exp_config=}"
-        continue
-    fi
-    if [ -n "$arg" ]; then
-        ADDITIONAL_ARGS+=("$arg")
-    fi
+SHARE_POLICY="group"
+NUM_WORKERS=4
+NUM_GPUS=0
+LOCAL_DIR_MARL=""
+LOCAL_MODE=0
+FORCE_COOP=0
+CHECKPOINT_FREQ=""
+STOP_REWARD=""
+CORE_ARCH=""
+ENCODE_LAYER=""
+TIMESTEPS=""
+
+REMAINDER=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --workers) MAX_WORKERS=$2; shift 2;;
+        --start-seed) START_SEED=$2; shift 2;;
+        --timesteps) TIMESTEPS=$2; shift 2;;
+        --wandb) WANDB_CONFIG=$2; shift 2;;
+        --env-config) ENV_CONFIG=$2; shift 2;;
+        --map) MAP_NAME=$2; shift 2;;
+        --with) WITH_ARGS+=("$2"); shift 2;;
+        --exp-config) EXP_CONFIG=$2; shift 2;;
+        --share-policy) SHARE_POLICY=$2; shift 2;;
+        --num-workers) NUM_WORKERS=$2; shift 2;;
+        --num-gpus) NUM_GPUS=$2; shift 2;;
+        --local-dir) LOCAL_DIR_MARL=$2; shift 2;;
+        --checkpoint-freq) CHECKPOINT_FREQ=$2; shift 2;;
+        --stop-reward) STOP_REWARD=$2; shift 2;;
+        --core-arch) CORE_ARCH=$2; shift 2;;
+        --encode-layer) ENCODE_LAYER=$2; shift 2;;
+        --local-mode) LOCAL_MODE=1; shift 1;;
+        --force-coop) FORCE_COOP=1; shift 1;;
+        --) shift; REMAINDER=("$@") ; break;;
+        *) REMAINDER+=("$1"); shift;;
+    esac
 done
 
-# 스크립트 위치 기준으로 경로 설정
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
-echo "=== 멀티시드 EPyMARL 실험 시작 ==="
-MAX_WORKERS=${RUN_MULTI_SEED_WORKERS:-1}
-if ! [[ "$MAX_WORKERS" =~ ^[0-9]+$ ]] || [ "$MAX_WORKERS" -lt 1 ]; then
-    echo "경고: RUN_MULTI_SEED_WORKERS 값이 잘못되었습니다. 1로 설정합니다."
+if ! [[ $MAX_WORKERS =~ ^[0-9]+$ ]] || [ "$MAX_WORKERS" -lt 1 ]; then
     MAX_WORKERS=1
 fi
-
-echo "알고리즘: $ALGORITHM"
-echo "환경: $ENV_KEY"
-echo "시드 개수: $NUM_SEEDS"
-echo "W&B 설정: $WANDB_CONFIG"
-echo "추가 인자: ${ADDITIONAL_ARGS[*]}"
-if [ -n "$EXP_CONFIG" ]; then
-    echo "실험 설정: $EXP_CONFIG"
+if ! [[ $START_SEED =~ ^[0-9]+$ ]]; then
+    START_SEED=1000
 fi
-echo "동시 실행 워커 수: $MAX_WORKERS"
-echo "========================================="
-echo ""
 
-declare -a JOB_PIDS=()
-FAILURE_DETECTED=0
+if [ "$FRAMEWORK" = "marllib" ] && [ -z "$MAP_NAME" ]; then
+    echo "MARLlib 실행에는 --map 옵션이 필요합니다." >&2
+    exit 1
+fi
 
-cleanup_jobs() {
+JOB_PIDS=()
+FAILURE=0
+
+cleanup() {
     if [ ${#JOB_PIDS[@]} -gt 0 ]; then
-        echo "정리: 실행 중인 모든 실험을 종료합니다..."
-        kill "${JOB_PIDS[@]}" 2>/dev/null
+        kill "${JOB_PIDS[@]}" 2>/dev/null || true
     fi
 }
-trap cleanup_jobs INT TERM
+trap cleanup INT TERM
 
-# 시드 기반 실험 실행
-for ((i=1; i<=NUM_SEEDS; i++)); do
-    SEED=$((1000 + i))
-    echo "[$i/$NUM_SEEDS] 시드 $SEED로 실험 실행 중..."
-    
-    # 환경에 따른 기본 설정
-    DEFAULT_ARGS=()
-    if [[ "$ENV_KEY" == *"matrixgames"* ]]; then
-        ENV_CONFIG="gymma"
-        DEFAULT_ARGS+=("env_args.time_limit=25")
-    elif [[ "$ENV_KEY" == *"lbforaging"* ]]; then
-        ENV_CONFIG="gymma"
-        DEFAULT_ARGS+=("env_args.time_limit=50")
-    elif [[ "$ENV_KEY" == *"rware"* ]]; then
-        ENV_CONFIG="gymma"
-        DEFAULT_ARGS+=("env_args.time_limit=500")
-    elif [[ "$ENV_KEY" == *"pz-mpe"* ]]; then
-        ENV_CONFIG="gymma"
-        DEFAULT_ARGS+=("env_args.time_limit=25")
-    elif [[ "$ENV_KEY" == "sc2" ]]; then
-        ENV_CONFIG="sc2"
-        DEFAULT_ARGS+=("env_args.map_name=3m")
-    else
-        ENV_CONFIG="gymma"
-    fi
-    
-    # W&B 실행 스크립트 사용
-    EXP_FLAGS=()
-    if [ -n "$EXP_CONFIG" ]; then
-        EXP_FLAGS+=("--exp-config" "$EXP_CONFIG")
-    fi
-
-    if [[ "$ENV_KEY" == "sc2" ]]; then
-        python "$PROJECT_ROOT/scripts/run_with_wandb.py" \
-            --config="$ALGORITHM" \
-            --env-config="$ENV_CONFIG" \
-            --wandb-config="$WANDB_CONFIG" \
-            "${EXP_FLAGS[@]}" \
-            seed=$SEED \
-            "${DEFAULT_ARGS[@]}" \
-            "${ADDITIONAL_ARGS[@]}" &
-    else
-        python "$PROJECT_ROOT/scripts/run_with_wandb.py" \
-            --config="$ALGORITHM" \
-            --env-config="$ENV_CONFIG" \
-            --wandb-config="$WANDB_CONFIG" \
-            "${EXP_FLAGS[@]}" \
-            env_args.key="$ENV_KEY" \
-            seed=$SEED \
-            "${DEFAULT_ARGS[@]}" \
-            "${ADDITIONAL_ARGS[@]}" &
-    fi
-
+launch_command() {
+    local cmd=("$@")
+    echo "[seed $CURRENT_SEED] ${cmd[*]}"
+    "${cmd[@]}" &
     JOB_PIDS+=("$!")
+}
 
-    while [ ${#JOB_PIDS[@]} -ge $MAX_WORKERS ]; do
+run_pymarl2() {
+    local with_list=("${WITH_ARGS[@]}" "seed=$CURRENT_SEED")
+    if [[ -n "$MAP_NAME" && "$ENV_CONFIG" == sc2* ]]; then
+        with_list+=("env_args.map_name=$MAP_NAME")
+    fi
+    if [[ -n "$TIMESTEPS" ]]; then
+        with_list+=("t_max=$TIMESTEPS")
+    fi
+    if [[ ${#REMAINDER[@]} -gt 0 ]]; then
+        with_list+=("${REMAINDER[@]}")
+    fi
+
+    local cmd=(python "$PROJECT_ROOT/scripts/run_with_wandb.py"
+        --config="$ALGORITHM"
+        --env-config="$ENV_CONFIG"
+        --wandb-config="$WANDB_CONFIG")
+    if [ -n "$EXP_CONFIG" ]; then
+        cmd+=(--exp-config "$EXP_CONFIG")
+    fi
+    if [[ ${#with_list[@]} -gt 0 ]]; then
+        cmd+=(with)
+        cmd+=("${with_list[@]}")
+    fi
+    launch_command "${cmd[@]}"
+}
+
+run_marllib() {
+    local cmd=(python "$PROJECT_ROOT/scripts/run_marllib.py"
+        --env="$TARGET_ENV"
+        --map="$MAP_NAME"
+        --algo="$ALGORITHM"
+        --seed="$CURRENT_SEED"
+        --share-policy="$SHARE_POLICY"
+        --num-workers="$NUM_WORKERS"
+        --num-gpus="$NUM_GPUS"
+        --wandb-config="$WANDB_CONFIG")
+    if [[ -n "$TIMESTEPS" ]]; then cmd+=(--timesteps "$TIMESTEPS"); fi
+    if [[ -n "$STOP_REWARD" ]]; then cmd+=(--stop-reward "$STOP_REWARD"); fi
+    if [[ -n "$LOCAL_DIR_MARL" ]]; then cmd+=(--local-dir "$LOCAL_DIR_MARL"); fi
+    if [[ -n "$CHECKPOINT_FREQ" ]]; then cmd+=(--checkpoint-freq "$CHECKPOINT_FREQ"); fi
+    if [[ "$LOCAL_MODE" -eq 1 ]]; then cmd+=(--local-mode); fi
+    if [[ "$FORCE_COOP" -eq 1 ]]; then cmd+=(--force-coop); fi
+    if [[ -n "$CORE_ARCH" ]]; then cmd+=(--core-arch "$CORE_ARCH"); fi
+    if [[ -n "$ENCODE_LAYER" ]]; then cmd+=(--encode-layer "$ENCODE_LAYER"); fi
+    if [[ ${#REMAINDER[@]} -gt 0 ]]; then cmd+=("${REMAINDER[@]}"); fi
+    launch_command "${cmd[@]}"
+}
+
+echo "=== Multi-seed run ==="
+echo "framework   : $FRAMEWORK"
+echo "algorithm   : $ALGORITHM"
+echo "environment : $TARGET_ENV"
+echo "num_seeds   : $NUM_SEEDS (start_seed=$START_SEED)"
+echo "max_workers : $MAX_WORKERS"
+if [ "$FRAMEWORK" = "pymarl2" ]; then
+    echo "wandb       : $WANDB_CONFIG"
+    echo "env_config  : $ENV_CONFIG"
+    echo "map         : ${MAP_NAME:-<default>}"
+else
+    echo "map         : $MAP_NAME"
+    echo "share_policy: $SHARE_POLICY"
+    echo "num_workers : $NUM_WORKERS"
+    echo "num_gpus    : $NUM_GPUS"
+    echo "wandb       : $WANDB_CONFIG"
+fi
+echo "========================"
+
+for ((i=0; i<NUM_SEEDS; i++)); do
+    CURRENT_SEED=$((START_SEED + i))
+    if [ "$FRAMEWORK" = "pymarl2" ]; then
+        run_pymarl2
+    else
+        run_marllib
+    fi
+
+    while [ ${#JOB_PIDS[@]} -ge "$MAX_WORKERS" ]; do
         wait "${JOB_PIDS[0]}"
         EXIT_CODE=$?
         JOB_PIDS=("${JOB_PIDS[@]:1}")
         if [ $EXIT_CODE -ne 0 ]; then
-            echo "경고: 일부 실험이 비정상 종료되었습니다 (exit code $EXIT_CODE)."
-            FAILURE_DETECTED=1
+            FAILURE=1
         fi
     done
 
-    if [ "$MAX_WORKERS" -eq 1 ]; then
-        sleep 2
-    fi
-    echo ""
 done
 
-for PID in "${JOB_PIDS[@]}"; do
-    wait "$PID"
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -ne 0 ]; then
-        echo "경고: 일부 실험이 비정상 종료되었습니다 (exit code $EXIT_CODE)."
-        FAILURE_DETECTED=1
+for pid in "${JOB_PIDS[@]}"; do
+    if ! wait "$pid"; then
+        FAILURE=1
     fi
+
 done
 
 trap - INT TERM
 
-if [ $FAILURE_DETECTED -eq 0 ]; then
-    echo "=== 모든 시드 실험 완료 ==="
+if [ $FAILURE -eq 0 ]; then
+    echo "모든 시드 실험이 완료되었습니다."
 else
-    echo "=== 실험 종료 (일부 실패 감지) ==="
+    echo "일부 실험에서 오류가 발생했습니다." >&2
+    exit 1
 fi
-echo "결과는 results/ 디렉토리와 W&B에서 확인할 수 있습니다."

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-통합 환경 설정 관리
-모든 지원 환경의 설정을 중앙에서 관리합니다.
+Legacy environment registry used by the deprecated EPyMARL workflow.
+The new PyMARL2/MARLlib pipeline relies on explicit configs under
+`configs/envs/` and the dedicated launcher scripts instead.
 """
 
 from typing import Dict, Any, Optional

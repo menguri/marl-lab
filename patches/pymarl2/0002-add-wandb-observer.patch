@@ -1,0 +1,81 @@
+diff --git a/src/main.py b/src/main.py
+index 0239b5a..1b74656 100644
+--- a/src/main.py
++++ b/src/main.py
+@@ -11,6 +11,11 @@ import torch as th
+ from utils.logging import get_logger
+ import yaml
+ 
++try:
++    from wandb.integration.sacred import WandbObserver
++except ImportError:  # pragma: no cover
++    WandbObserver = None
++
+ from run import REGISTRY as run_REGISTRY
+ 
+ SETTINGS['CAPTURE_MODE'] = "fd" # set to "no" if you want to see stdout/stderr in console
+@@ -20,6 +25,55 @@ ex = Experiment("pymarl")
+ ex.logger = logger
+ ex.captured_out_filter = apply_backspaces_and_linefeeds
+ 
++
++
++def _get_wandb_tags():
++    tags = os.environ.get("WANDB_TAGS")
++    if not tags:
++        return []
++    return [item.strip() for item in tags.split(",") if item.strip()]
++
++
++def maybe_attach_wandb_observer(experiment):
++    if WandbObserver is None:
++        return
++
++    project = os.environ.get("WANDB_PROJECT")
++    if not project:
++        return
++
++    mode = os.environ.get("WANDB_MODE", "online").lower()
++    if mode == "disabled":
++        logger.info("Skipping W&B observer: WANDB_MODE=disabled.")
++        return
++
++    kwargs = {
++        "project": project,
++        "entity": os.environ.get("WANDB_ENTITY") or None,
++    }
++
++    tags = _get_wandb_tags()
++    if tags:
++        kwargs["tags"] = tags
++
++    for env_key, wandb_key in (
++        ("WANDB_RUN_GROUP", "group"),
++        ("WANDB_NOTES", "notes"),
++        ("WANDB_NAME", "name"),
++    ):
++        value = os.environ.get(env_key)
++        if value:
++            kwargs[wandb_key] = value
++
++    try:
++        observer = WandbObserver(**kwargs)
++    except Exception as exc:  # pragma: no cover - best effort logging
++        logger.warning("Failed to initialise W&B observer: %s", exc)
++        return
++
++    experiment.observers.append(observer)
++    logger.info("W&B observer attached (project=%s).", project)
++
+ results_path = join(dirname(dirname(abspath(__file__))), "results")
+ 
+ 
+@@ -109,6 +163,8 @@ if __name__ == '__main__':
+     logger.info("Saving to FileStorageObserver in {}.".format(file_obs_path))
+     ex.observers.append(FileStorageObserver.create(file_obs_path))
+ 
++    maybe_attach_wandb_observer(ex)
++
+     ex.run_commandline(params)
+ 
+     # flush

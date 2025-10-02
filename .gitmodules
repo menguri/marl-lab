@@ -1,6 +1,6 @@
-[submodule "external/epymarl"]
-	path = external/epymarl
-	url = https://github.com/uoe-agents/epymarl.git
 [submodule "external/pymarl2"]
 	path = external/pymarl2
 	url = https://github.com/hijkzzz/pymarl2.git
+[submodule "external/marllib"]
+	path = external/marllib
+	url = https://github.com/Replicable-MARL/MARLlib.git

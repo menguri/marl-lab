@@ -1,36 +1,45 @@
-# scripts/run_once.py
-import os, sys, subprocess
+#!/usr/bin/env python3
+"""Quick helper to launch a single PyMARL2 run from the project root."""
+from __future__ import annotations
+
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PYMARL2_MAIN = ROOT / "external" / "pymarl2" / "src" / "main.py"
+PATCH_SCRIPT = ROOT / "scripts" / "apply_pymarl2_patches.sh"
 
-# epymarl/src 를 먼저, 그 다음 plugins 를 path 앞쪽에 추가
-sys.path.insert(0, str(ROOT / "external" / "epymarl" / "src"))
 
-# plugins 다음 (registry를 찾기 위해 필요)
-sys.path.insert(1, str(ROOT))
+def run(algo: str = "qmix", env_config: str = "sc2", with_args: list[str] | None = None) -> None:
+    if PATCH_SCRIPT.exists():
+        subprocess.run([str(PATCH_SCRIPT)], check=True)
 
-from plugins import registry as _plugins_registry  # noqa: F401  # ensures hooks load
-
-def run(algo="qmix", env="sc2v2", with_args=None):
-    cmd = [
-        "python",
-        str(ROOT / "external" / "epymarl" / "src" / "main.py"),
+    command: list[str] = [
+        sys.executable,
+        str(PYMARL2_MAIN),
         f"--config={algo}",
-        f"--env-config=sc2v2",
-        "with",
+        f"--env-config={env_config}",
     ]
-    with_args = with_args or []
-    cmd += with_args
-    print("Running:", " ".join(cmd))
-    subprocess.run(cmd, check=True)
+
+    args = list(with_args) if with_args else []
+    if not any(token.startswith("local_results_path") for token in args):
+        args.append('local_results_path="results/pymarl2"')
+    if args:
+        command.append("with")
+        command.extend(args)
+
+    print("Running:", " ".join(command))
+    subprocess.run(command, check=True)
+
 
 if __name__ == "__main__":
     run(
         algo="qmix",
-        env="sc2v2",
+        env_config="sc2v2",
         with_args=[
             'seed=1',
-            'env_args.map_name="3m"',
+            'env_args.map_name="protoss_5_vs_5"',
+            't_max=5000000',
         ],
     )
