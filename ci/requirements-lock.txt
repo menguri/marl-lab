@@ -79,7 +79,7 @@ pluggy==1.6.0
 portpicker==1.6.0
 probscale==0.2.5
 prompt_toolkit==3.0.51
-protobuf==3.20.3
+protobuf==4.25.8
 psutil==7.0.0
 pure_eval==0.2.3
 py==1.11.0
